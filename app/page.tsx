@@ -1,26 +1,37 @@
 import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ShoppingCart } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            Seznam nákupů
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Prohlédněte své nákupní seznamy a klikněte na některý pro detail.
-          </p>
+    <div className="min-h-screen bg-zinc-950 text-white">
+      <div className="container mx-auto px-4 py-24">
+        <div className="max-w-xl mx-auto">
+          <Card className="bg-zinc-900 border-zinc-800">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-2 w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                <ShoppingCart className="h-6 w-6 text-yellow-500" />
+              </div>
+              <CardTitle className="text-3xl font-bold">
+                Shopping list app
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex items-center justify-center gap-3">
+              <Link href="/auth/login">
+                <Button className="bg-yellow-500 text-black hover:bg-yellow-400">
+                  Login
+                </Button>
+              </Link>
+              <Link href="/auth/register">
+                <Button variant="secondary" className="border-zinc-700">
+                  Register
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <Link
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="/dashboard"
-          >
-            Otevřít dashboard
-          </Link>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -23,7 +23,7 @@ if (!global.mongoose) {
   global.mongoose = cached;
 }
 
-async function dbConnect(): Promise<typeof mongoose> {
+async function dbConect(): Promise<typeof mongoose> {
   if (cached.conn) {
     return cached.conn;
   }
@@ -42,4 +42,4 @@ async function dbConnect(): Promise<typeof mongoose> {
   return cached.conn;
 }
 
-export default dbConnect;
+export default dbConect;
