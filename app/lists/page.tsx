@@ -7,7 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { Plus } from "lucide-react";
+import { Plus, Trash } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import CreateListModal, { type CreateItem } from "@/components/CreateListModal";
 import ListDetailSheet from "@/components/ListDetailSheet";
 
@@ -51,6 +62,12 @@ export default function ListsPage() {
   } | null>(null);
   const [openDetail, setOpenDetail] = useState(false);
   const [selected, setSelected] = useState<ListItem | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [alertState, setAlertState] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -87,6 +104,41 @@ export default function ListsPage() {
       setSubmitError(null);
     }
   }, [openCreate]);
+
+  const isOwner = (list: ListItem) => {
+    if (!currentUser) return false;
+    const ownerId =
+      typeof list.ownerId === "string" ? list.ownerId : list.ownerId?._id;
+    return ownerId === currentUser.userId;
+  };
+
+  const deleteList = async (id: string) => {
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/ShoppingList/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Nepodařilo se smazat seznam");
+
+      setLists((prev) => (prev ? prev.filter((l) => l._id !== id) : []));
+      if (selected?._id === id) {
+        setOpenDetail(false);
+        setSelected(null);
+      }
+      setAlertState({ type: "success", message: "Seznam byl úspěšně smazán." });
+    } catch (e) {
+      setAlertState({
+        type: "error",
+        message: e instanceof Error ? e.message : "Chyba při mazání seznamu",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  useEffect(() => {
+    if (!alertState) return;
+    const t = setTimeout(() => setAlertState(null), 3500);
+    return () => clearTimeout(t);
+  }, [alertState]);
 
   const getBadgeClass = (status: Status) => {
     if (status === "active")
@@ -171,6 +223,19 @@ export default function ListsPage() {
           </div>
         )}
 
+        {alertState && (
+          <div className="mb-4">
+            <Alert
+              variant={alertState.type === "error" ? "destructive" : "default"}
+            >
+              <AlertTitle>
+                {alertState.type === "error" ? "Chyba" : "Hotovo"}
+              </AlertTitle>
+              <AlertDescription>{alertState.message}</AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         {lists && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {lists
@@ -187,13 +252,34 @@ export default function ListsPage() {
                 >
                   <Card className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-colors cursor-pointer">
                     <CardHeader>
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-start justify-between gap-3">
                         <CardTitle className="text-lg font-medium text-white">
                           {list.title}
                         </CardTitle>
-                        <Badge className={getBadgeClass(list.status)}>
-                          {list.status}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge className={getBadgeClass(list.status)}>
+                            {list.status}
+                          </Badge>
+                          {isOwner(list) && (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="shrink-0"
+                              title="Smazat seznam"
+                              disabled={deletingId === list._id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmId(list._id);
+                              }}
+                            >
+                              {deletingId === list._id ? (
+                                <Spinner className="h-4 w-4" />
+                              ) : (
+                                <Trash className="h-5 w-5 text-red-500" />
+                              )}
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -244,6 +330,35 @@ export default function ListsPage() {
           }}
           refreshLists={load}
         />
+
+        <AlertDialog
+          open={!!confirmId}
+          onOpenChange={(open) => {
+            if (!open) setConfirmId(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Opravdu smazat tento seznam?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tato akce je nevratná. Seznam bude smazán včetně položek.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Zrušit</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  if (confirmId) {
+                    await deleteList(confirmId);
+                    setConfirmId(null);
+                  }
+                }}
+              >
+                Smazat
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
